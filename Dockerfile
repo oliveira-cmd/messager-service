@@ -19,19 +19,18 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Definir diretório de trabalho
 WORKDIR /var/www
 
-# Copiar arquivos do projeto
+# Baixar Laravel apenas se a pasta estiver vazia
+RUN if [ ! -f "artisan" ]; then rm -rf /var/www/* && composer create-project --prefer-dist laravel/laravel .; fi
+
+# Copiar arquivos do projeto (somente depois de baixar o Laravel)
 COPY . .
 
-# Instalar dependências do Laravel
-RUN composer install --no-dev --optimize-autoloader
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# Criar diretórios necessários
-RUN mkdir -p /var/www/storage /var/www/bootstrap/cache
+# Instalar dependências do Laravel
+RUN composer install
 
 # Definir permissões
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
 CMD ["php-fpm"]
-
-# Adicionar composer.json
-COPY composer.json /var/www/composer.json
